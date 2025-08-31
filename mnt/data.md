@@ -4,7 +4,7 @@
 # Opis: Plik konfiguracyjny systemu Pisarza AI; Ustala reguły, style, zasady, profile, ustawienia projektu i wiele więcej.
 # Data utworzenia: 2025-07-16 # Autor: Krzysztof + Łatka
 # Data modyfikacji: 2025-08-31 
-# Wersja: v2.0
+# Wersja: v2.0.1
 ---
 ---
 [LOG ZMIAN]
