@@ -13,7 +13,7 @@ Licencja: ISC.
 from __future__ import annotations
 
 __system_name__ = "Łatka (Large Language Model)"
-__version__ = "1.1.8.5"
+__version__ = "1.1.8.6"
 import argparse
 import atexit
 import hashlib
@@ -1340,11 +1340,19 @@ def _journal_write(path: Path, content: str) -> None:
 
 
 def _validate_project(root: Path) -> dict[str, Any]:
-    out: dict[str, list[str]] = {"ok": [], "missing": []}
+    """Sprawdź obecność plików projektu.
+    Zwraca słownik z kluczami:
+      - ok:       lista plików wymaganych, które istnieją,
+      - missing:  lista plików wymaganych, których brakuje,
+      - optional: lista plików opcjonalnych, które istnieją.
+    """
+    out: dict[str, list[str]] = {"ok": [], "missing": [], "optional": []}
     must_exist = [
         "dziennik.json",
         "analizy_utworow.json",
         "extra_data.json",
+    ]
+    optional = [
         "plugins_jazn.json",
         "data.txt",
     ]
@@ -1354,6 +1362,9 @@ def _validate_project(root: Path) -> dict[str, Any]:
             out["ok"].append(name)
         else:
             out["missing"].append(name)
+    for name in optional:
+        if (root / name).exists():
+            out["optional"].append(name)
     return out
 
 
@@ -1375,13 +1386,15 @@ def _json_write_atomic(path: Path, obj: Any) -> None:
                 return
             except Exception:
                 pass
+            except Exception as e:
+                log.debug("json_write_atomic: _json_dump_atomic failed: %r", e)
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         tmp = p.with_suffix(p.suffix + ".tmp")
         tmp.write_text(txt, encoding="utf-8")
         os.replace(tmp, p)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("json_write_atomic: write failed for %s: %r", path, e)
 
 
 # # # # # START CLASS ———————————————————————————————— # # # # #
@@ -2817,8 +2830,8 @@ class LatkaCoreService(IService, HeartbeatMixin):
         for u in self._unsubs:
             try:
                 u()
-            except:
-                pass
+            except Exception as e:
+                log.debug("LatkaCoreService.stop: unsubscribe callback failed: %r", e)
         self._unsubs.clear()
 
     def handle(self, topic: str, payload: Dict[str, Any]) -> None:
